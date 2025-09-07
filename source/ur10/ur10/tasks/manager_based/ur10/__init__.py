@@ -23,7 +23,7 @@ gym.register(
 )
 
 gym.register(
-    id="Template-Ur10-Play-V0",
+    id="Template-Ur10-Play-v0",
     entry_point="isaaclab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     kwargs={

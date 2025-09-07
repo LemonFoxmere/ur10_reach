@@ -4,5 +4,5 @@
 | S. No. | Task Name             | Entry Point                     | Config                                                     |
 +--------+-----------------------+---------------------------------+------------------------------------------------------------+
 |   1    | Template-Ur10-v0      | isaaclab.envs:ManagerBasedRLEnv | ur10.tasks.manager_based.ur10.ur10_env_cfg:Ur10EnvCfg      |
-|   2    | Template-Ur10-Play-V0 | isaaclab.envs:ManagerBasedRLEnv | ur10.tasks.manager_based.ur10.ur10_env_cfg:Ur10EnvCfg_PLAY |
+|   2    | Template-Ur10-Play-v0 | isaaclab.envs:ManagerBasedRLEnv | ur10.tasks.manager_based.ur10.ur10_env_cfg:Ur10EnvCfg_PLAY |
 +--------+-----------------------+---------------------------------+------------------------------------------------------------+

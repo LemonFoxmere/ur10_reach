@@ -174,7 +174,17 @@ class RewardsCfg:
         },
     )
 
-    # (2) end effector tracking (fine grained)
+    # (2) end effector orientation reward
+    ee_orient_tracking = RewTerm(
+        func=mdp.orient_command_error,
+        weight=-0.05,
+        params={
+            "asset_cfg": SceneEntityCfg("robot", body_names=["ee_link"]),
+            "command_name": "ee_pose",
+        },
+    )
+
+    # (3) end effector tracking (fine grained)
     ee_pos_tracking_fine = RewTerm(
         func=mdp.position_command_error_tanh,
         weight=0.1,  # 1 - tanh(d) produces a number close and closer to 1 as we start moving more accurately
@@ -185,13 +195,18 @@ class RewardsCfg:
         },
     )
 
-    # (3) action penalty
+    # (4) action penalty
     action_rt = RewTerm(func=mdp.action_rate_l2, weight=-1e-4)
     joint_vel = RewTerm(
         func=mdp.joint_vel_l2,
         weight=-1e-4,
         params={"asset_cfg": SceneEntityCfg("robot")},
     )
+    # joint_acc = RewTerm(  # penalize large acceleration? (should optimally penalize large jerk, but this works for now i guess)
+    #     func=mdp.joint_acc_l2,
+    #     weight=-1e-4,
+    #     params={"asset_cfg": SceneEntityCfg("robot")},
+    # )
 
 
 @configclass
@@ -217,18 +232,33 @@ class CurriculumCfg:
 
     # the point of these terms is to slowly ramp up the penalties so that the agent
     # can explore properly at the beginning of training.
+
+    ee_orient_tracking = CurrTerm(
+        func=mdp.modify_reward_weight,
+        params={"term_name": "ee_orient_tracking", "weight": -0.2, "num_steps": 7000},
+    )
+
+    ee_orient_tracking = CurrTerm(
+        func=mdp.modify_reward_weight,
+        params={"term_name": "ee_orient_tracking", "weight": -0.1, "num_steps": 3500},
+    )
+
     action_rt = CurrTerm(
         func=mdp.modify_reward_weight,
         params={
             "term_name": "action_rt",
             "weight": -0.005,
-            "num_steps": 4500,
-        },  # slowly increase penalty to -0.005 from -0.0001 (-1e-4) by step 4500
+            "num_steps": 10000,
+        },  # increase penalty to -0.005 from -0.0001 (-1e-4) at step 4500
     )
     joint_vel = CurrTerm(
         func=mdp.modify_reward_weight,
-        params={"term_name": "joint_vel", "weight": -0.001, "num_steps": 4500},
+        params={"term_name": "joint_vel", "weight": -0.001, "num_steps": 10000},
     )
+    # joint_acc = CurrTerm(
+    #     func=mdp.modify_reward_weight,
+    #     params={"term_name": "joint_acc", "weight": 0, "num_steps": 12000},
+    # )
 
 
 ##
@@ -239,7 +269,7 @@ class CurriculumCfg:
 @configclass
 class Ur10EnvCfg(ManagerBasedRLEnvCfg):
     # Scene settings
-    scene: Ur10SceneCfg = Ur10SceneCfg(num_envs=2000, env_spacing=4.0)
+    scene: Ur10SceneCfg = Ur10SceneCfg(num_envs=2048, env_spacing=4.0)
     # Basic settings
     observations: ObservationsCfg = ObservationsCfg()
     actions: ActionsCfg = ActionsCfg()
@@ -269,7 +299,7 @@ class Ur10EnvCfg_PLAY(Ur10EnvCfg):
         super().__post_init__()  # run parent init script
 
         # smaller scnee
-        self.scene.num_envs = 50
-        self.scene.env_spacing = 2.5
+        self.scene.num_envs = 5
+        self.scene.env_spacing = 3
         # disable randomization
         self.observations.policy.enable_corruption = False
