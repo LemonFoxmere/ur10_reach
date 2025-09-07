@@ -202,11 +202,11 @@ class RewardsCfg:
         weight=-1e-4,
         params={"asset_cfg": SceneEntityCfg("robot")},
     )
-    # joint_acc = RewTerm(  # penalize large acceleration? (should optimally penalize large jerk, but this works for now i guess)
-    #     func=mdp.joint_acc_l2,
-    #     weight=-1e-4,
-    #     params={"asset_cfg": SceneEntityCfg("robot")},
-    # )
+    joint_acc = RewTerm(  # penalize large acceleration? (should optimally penalize large jerk, but this works for now i guess)
+        func=mdp.joint_acc_l2,
+        weight=0,
+        params={"asset_cfg": SceneEntityCfg("robot")},
+    )
 
 
 @configclass
@@ -215,15 +215,6 @@ class TerminationsCfg:
 
     # (1) Time out
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
-
-    # (2) Cart out of bounds
-    # cart_out_of_bounds = DoneTerm(
-    #     func=mdp.joint_pos_out_of_manual_limit,
-    #     params={
-    #         "asset_cfg": SceneEntityCfg("robot", joint_names=["slider_to_cart"]),
-    #         "bounds": (-3.0, 3.0),
-    #     },
-    # )
 
 
 @configclass
@@ -234,13 +225,24 @@ class CurriculumCfg:
     # can explore properly at the beginning of training.
 
     ee_orient_tracking = CurrTerm(
-        func=mdp.modify_reward_weight,
-        params={"term_name": "ee_orient_tracking", "weight": -0.2, "num_steps": 7000},
+        func=mdp.lerp_reward_weight,
+        params={
+            "term_name": "ee_orient_tracking",
+            "w0": -0.05,
+            "w1": -0.15,
+            "t0": 0,
+            "t1": 7000,
+        },
     )
-
-    ee_orient_tracking = CurrTerm(
-        func=mdp.modify_reward_weight,
-        params={"term_name": "ee_orient_tracking", "weight": -0.1, "num_steps": 3500},
+    ee_pos_tracking_fine = CurrTerm(
+        func=mdp.lerp_reward_weight,
+        params={
+            "term_name": "ee_pos_tracking_fine",
+            "w0": 0.1,
+            "w1": 0.2,
+            "t0": 3500,
+            "t1": 10000,
+        },
     )
 
     action_rt = CurrTerm(
@@ -255,10 +257,16 @@ class CurriculumCfg:
         func=mdp.modify_reward_weight,
         params={"term_name": "joint_vel", "weight": -0.001, "num_steps": 10000},
     )
-    # joint_acc = CurrTerm(
-    #     func=mdp.modify_reward_weight,
-    #     params={"term_name": "joint_acc", "weight": 0, "num_steps": 12000},
-    # )
+    joint_acc = CurrTerm(
+        func=mdp.lerp_reward_weight,
+        params={
+            "term_name": "joint_acc",
+            "w0": 0,
+            "w1": -3e-7,
+            "t0": 9000,
+            "t1": 15000,
+        },
+    )
 
 
 ##
@@ -269,7 +277,7 @@ class CurriculumCfg:
 @configclass
 class Ur10EnvCfg(ManagerBasedRLEnvCfg):
     # Scene settings
-    scene: Ur10SceneCfg = Ur10SceneCfg(num_envs=2048, env_spacing=4.0)
+    scene: Ur10SceneCfg = Ur10SceneCfg(num_envs=512, env_spacing=4.0)
     # Basic settings
     observations: ObservationsCfg = ObservationsCfg()
     actions: ActionsCfg = ActionsCfg()
